@@ -43,8 +43,8 @@
           @keydown="handleKeydown"
           @input="updateDocument"
           contenteditable="true"
+          v-html="document.Content"
         >
-          {{ document.Content }}
         </div>
 
         <div
@@ -135,8 +135,8 @@ export default {
   methods: {
     handleKeydown(event) {
       if (event.key === "Enter") {
-        this.$refs.textareaRef.innerText += "\n"
-        this.updateDocument();
+        // this.$refs.textareaRef.innerText += "\n"
+        // this.updateDocument();
         // Handle the line break if needed
         console.log("Line break detected!");
       }
@@ -157,7 +157,7 @@ export default {
         .catch((err) => console.log(err));
     },
     updateDocument() {
-      let Content = this.$refs.textareaRef.innerText;
+      let Content = this.$refs.textareaRef.innerHTML;
       this.socket.emit("edit-document", { id: this.id, ...this.document, Content });
     },
     getCoordinates() {
