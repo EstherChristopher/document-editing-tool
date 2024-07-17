@@ -33,21 +33,20 @@
         <h3>{{ document.Title }}</h3>
         <!-- <p>Created by: User Name (date)</p> -->
       </div>
-      <div id="editor">
+      <div id="editor" style="position: relative;">
         <p v-if="!loggedIn">Log in to make edits to this document</p>
-        <div
+        <textarea
           class="textarea"
           ref="textareaRef"
           :disabled="!loggedIn"
           @click="getCoordinates"
-          @keydown="handleKeydown"
           @input="updateDocument"
-          contenteditable="true"
-          v-html="document.Content"
+          v-model="document.Content"
         >
-        </div>
+        </textarea>
+      </div>
 
-        <div
+      <div
           class="cursor"
           v-for="cursor in cursorTrackers"
           :key="cursor.user"
@@ -56,16 +55,19 @@
           :user="cursor.user"
           :style="{
             position: 'absolute',
-            left: cursor.x + 'px',
-            top: cursor.y + 'px',
+            left: (cursor.x) + 'px',
+            top: (cursor.y) + 'px',
             color: cursor.color,
-            display: !loggedIn ? 'none' : 'inline-block',
+            display: loggedIn ? 'inline-block' : 'none',
+            transform: 'rotate(-90deg)',
           }"
         >
-          |
-          <span class="cursor-text">{{ cursor.user }}</span>
+          <!-- <span style="transform: rotate(-90deg)"> -->
+            <i class="uil uil-location-arrow" style="font-size: 15px;"></i>
+          <!-- </span> -->
+          
+          <span class="cursor-text" style="transform: rotate(90deg);">{{ cursor.user }}</span>
         </div>
-      </div>
     </div>
   </div>
 </template>
@@ -76,9 +78,13 @@ import io from "socket.io-client";
 
 export default {
   beforeMount() {
+
+    this.fetchDocument();
+    
     this.socket = io("http://localhost:1337");
     this.socket.on("document-updated", () => {
       this.fetchDocument();
+      console.log("Document updated");
     });
 
     this.socket.on("active-users", (data) => {
@@ -133,15 +139,6 @@ export default {
     };
   },
   methods: {
-    handleKeydown(event) {
-      if (event.key === "Enter") {
-        // this.$refs.textareaRef.innerText += "\n"
-        // this.updateDocument();
-        // Handle the line break if needed
-        console.log("Line break detected!");
-      }
-      // Let the input event handle the rest
-    },
     // the login function emits the user-joined event to the websocket
     login() {
       this.socket.emit("user-joined", this.username);
@@ -157,15 +154,14 @@ export default {
         .catch((err) => console.log(err));
     },
     updateDocument() {
-      let Content = this.$refs.textareaRef.innerHTML;
-      this.socket.emit("edit-document", { id: this.id, ...this.document, Content });
+      this.socket.emit("edit-document", { id: this.id, ...this.document });
     },
-    getCoordinates() {
+    getCoordinates(event) {
       if (this.loggedIn) {
-        const selection = window.getSelection();
-        const range = selection.getRangeAt(0);
-        let rect = range.getBoundingClientRect();
-        this.socket.emit("move-cursor", { x: rect.x, y: rect.y });
+        const x = event.clientX;
+        const y = event.clientY;
+        
+        this.socket.emit("move-cursor", { x, y, pos: event.target.selectionStart });
       }
     },
     generateRandomColor() {
